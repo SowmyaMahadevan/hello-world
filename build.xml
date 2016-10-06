@@ -1,0 +1,197 @@
+<project name="kriyaBuild" default="all" basedir=".">
+<!-- set global properties for this build -->
+<property file="build.properties"/>
+<taskdef resource="org/eclipse/jgit/ant/ant-tasks.properties">
+       <classpath>
+         <pathelement location="Users/Sowmya/ant/lib/org.eclipse.jgit.ant-VERSION.jar"/>
+         <pathelement location="Users/Sowmya/ant/lib/org.eclipse.jgit-VERSION.jar"/>
+         <pathelement location="Users/Sowmya/ant/lib/jsch-0.1.44-1.jar"/>
+	  <pathelement location="${MYSQLDRIVER}"/>
+       </classpath>
+</taskdef>
+
+<!--getXmlExport clones the kriyaxml_export project for the branch passed in -->
+<macrodef name ="getXmlExport">
+	<attribute name="branch" />
+	<sequential>
+		<git-clone uri="https://${gituser}:${gitpwd}@${kriyaxml_exportRepo}" dest = "${src}/@{branch}" branch= "@{branch}"/> 
+	</sequential>
+</macrodef>
+
+<target name="sqltest">
+	<echo>Loading sql driver from ${MYSQLDRIVER}</echo>
+<sql driver="${DB.DRIVER}"
+    url="${DB.HOST}"
+    userid="${DB.USER}"
+    password="${DB.PASSWORD}">
+    <classpath>
+       <pathelement location="${MYSQLDRIVER}"/>
+    </classpath>
+insert
+into table some_table
+values(1,2,3,4);
+</sql>
+</target>
+
+ <target name="pltest">
+        <exec executable="perl" dir="${basedir}">
+            <arg value="test.pl"/>
+	     <arg value=" Sowmya"/>
+        </exec>
+    </target>
+
+
+<!-- Targets-->
+<!-- Run All targets-->
+  <target name="all" depends="init,XMLExport" >
+  </target>
+  
+  <!-- Deploy code for MS-->
+  <target name="deployMS_QA" depends = "init,gitClone_MS_QA,sftp_MS_QA" description ="Microbiology->Deploying latest Github files to QA..">
+  </target>
+  
+   <target name="deployMS_STG" depends = "init,gitClone_MS_QA,sftp_MS_STG" description ="Microbiology->Deploying latest Github files to QA..">
+  </target>
+  
+  <target name="deployMS_Live" depends = "init,gitClone_MS_Live,sftp_MS_Live" description ="Microbiology->Deploying latest Github files to live..">
+  </target>
+  
+  <!-- Deploy code for eLife-->
+   <target name="deployeLife" depends = "init,gitClone_eLife,sftp_eLife" description ="eLife->Deploying latest Github files to live..">
+  </target>
+  
+  <!-- Deploy code for BMJ-->
+  <target name="deployBMJ" depends = "init,gitClone_bmj,sftp_bmj" description ="BMJ->Deploying latest Github files to live..">
+  </target>
+  
+    <!-- Deploy code for RCS-->
+  <target name="deployRCS" depends = "init,gitClone_rcs,sftp_rcs" description ="RCS->Deploying latest Github files to live..">
+  </target>
+  
+<!--Init-->
+	 <target name="init">
+		<!-- Create the time stamp -->
+	     <tstamp>
+		<format property="TODAY" pattern="HH:mm:ss:sss zzz" locale="en,UK"/>
+	     </tstamp>
+	     
+	     <echo>${TODAY} kriyaBuild ${buildversion}: Initializing build..</echo>
+	   
+		 <!-- Delete src directory if exists-->
+	     <delete dir="${src}"/>
+	     <!-- Create the build directory structure used by compile -->
+	     <mkdir dir="${src}" />
+	 </target>
+	
+	<!-- Start MS-->
+	<!-- Download code from MS branch-->
+	<target name="gitClone_MS_QA" description="Download code from MS github  QA branch...">
+		<echo>Updating kriya_xmlexport...</echo>
+		<echo>Cloning ${msbranch_qa}...</echo>
+			<getXmlExport branch="${msbranch_qa}"></getXmlExport>
+		<echo>Done</echo>
+	</target>
+	<!-- Download code from MS branch Live-->
+	<target name="gitClone_MS_Live" description="Download code from MS github  Live branch...">
+		<echo>Updating kriya_xmlexport...</echo>
+		<echo>Cloning ${msbranch_live}...</echo>
+			<getXmlExport branch="${msbranch_live}"></getXmlExport>
+		<echo>Done</echo>
+	</target>
+	
+	<!-- Copy files to QA-->
+	<target name = "sftp_MS_QA" description ="Deploying fies to Microbiology..">
+	<scp todir="${ftpuser}:${ftppwd}@${ftpdir_qa}" sftp="true" trust = "true" port ="2020">
+	<fileset dir="${src}/${msbranch_qa}"/>
+	</scp>
+	</target>
+	
+	<!-- Copy files to STG-->
+	<target name = "sftp_MS_STG" description ="Deploying fies to Microbiology..">
+	<scp todir="${ftpuser}:${ftppwd}@${ftpdir_stg}" sftp="true" trust = "true" port ="2020">
+	<fileset dir="${src}/${msbranch_qa}"/>
+	</scp>
+	</target>
+	
+	<!-- Copy files to Live-->
+	<target name = "sftp_MS_Live" description ="Deploying fies to Microbiology..">
+	<scp todir="${ftpuser}:${ftppwd}@${ftpdir_live}" sftp="true" trust = "true" port ="2020">
+	<fileset dir="${src}/${msbranch_live}"/>
+	</scp>
+	</target>
+	
+	<!-- end MS-->
+	
+	<!--Start eLife-->
+	<!-- Download code from eLife branch-->
+	<target name="gitClone_eLife" description="Download code from eLife github...">
+		<echo>Updating kriya_xmlexport...</echo>
+		<echo>Cloning ${elifebranch}...</echo>
+			<getXmlExport branch="${elifebranch}"></getXmlExport>
+		<echo>Done</echo>
+	</target>
+	
+	<!-- Copy files to QA-->
+	<target name = "sftp_eLife" description ="Deploying fies to eLife..">
+	<scp todir="${ftpuser}:${ftppwd}@81.142.231.205:/var/www/html/_default/cms/cms-0.9.40-alpha-qa/ecs_includes/" sftp="true" trust = "true" port ="2020">
+	<fileset dir="${src}/${elifebranch}"/>
+	</scp>
+	</target>
+	
+	<!--end eLife-->
+	
+	<!-- Start BMJ-->
+	<!-- Download code from eLife branch-->
+	<target name="gitClone_bmj" description="Download code from BMJ github...">
+		<echo>Updating kriya_xmlexport...</echo>
+		<echo>Cloning ${bmjbranch}...</echo>
+			<getXmlExport branch="${bmjbranch}"></getXmlExport>
+		<echo>Done</echo>
+	</target>
+	
+	<!-- Copy files to QA-->
+	<target name = "sftp_bmj" description ="Deploying fies to BMJ..">
+		<echo>WARNING: BMJ updated on live. There is NO QA environment!!</echo>
+	<scp todir="${ftpuser}:${ftppwd}@88.202.224.171:/var/www/html/_default/cms/cms-0.9.40-alpha/ecs_includes/bmj" sftp="true" trust = "true" port ="2020">
+	<fileset dir="${src}/${bmjbranch}"/>
+	</scp>
+	</target>
+	<!--end BMJ-->
+	
+	<!-- Start RCS-->
+	<!-- Download code from RCS branch-->
+	<target name="gitClone_rcs" description="Download code from RCS github...">
+		<echo>Updating kriya_xmlexport...</echo>
+		<echo>Cloning ${rcsbranch}...</echo>
+			<getXmlExport branch="${rcsbranch}"></getXmlExport>
+		<echo>Done</echo>
+	</target>
+	
+	<!-- Copy files to QA-->
+	<target name = "sftp_rcs" description ="Deploying fies to RCS..">
+		<echo>Updating kriya_xmlexport</echo>
+	<scp todir="${ftpuser}:${ftppwd}@81.142.231.205:/var/www/html/_default/cms/cms-0.9.40-alpha-qa/ecs_includes//rcs" sftp="true" trust = "true" port ="2020">
+	<fileset dir="${src}/${rcsbranch}"/>
+	</scp>
+	</target>
+	<!--end BMJ-->
+	
+	
+	<!-- Download the XML Export code -->
+	<!-- XML Export for eLife-->
+	<!--<target name ="git-clone">
+		<git-clone uri = "https://${gituser}:${gitpwd}@${kriyaxml_exportRepo}" dest = "${src}" branch="${msbranch}">
+		</git-clone>
+	</target>-->
+	<target name = "XMLExport">
+		<echo>Updating kriya_xmlexport...</echo>
+		<echo>Cloning ${msbranch}...</echo>
+			<getXmlExport branch="${msbranch}"></getXmlExport>
+		<echo>Done</echo>
+		<echo>Cloning ${elifebranch}...</echo>
+			<getXmlExport branch="${elifebranch}"></getXmlExport>
+		<echo>Done</echo>
+	</target>
+	
+
+</project>
